@@ -1,59 +1,44 @@
-name: build-and-release
+name: Generate Files JSON
 
 on:
   push:
-    tags:
-      - 'v*'
-
-env:
-  NODE_VERSION: '22'
+    branches:
+      - main  # 如果你的主分支叫 master，请改为 master
+    paths:
+      - 'json/**'
+      - 'scripts/**'
+      - 'spider/**'
+  workflow_dispatch: # 允许你在 GitHub 页面上手动点击触发
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # 赋予工作流写入并推送代码的权限
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install 7zip
+      - name: Generate Paths JSON
         run: |
-          sudo apt-get update
-          sudo apt-get install -y p7zip-full
+          # 1. 使用 find 查找三个目标文件夹下的所有文件 (排除目录本身)
+          # 2. 使用 jq 将行文本列表转换成标准的 JSON 数组，并写入到根目录的 files.json
+          find json scripts spider -type f 2>/dev/null | jq -R . | jq -s . > files.json
+          
+          echo "Generated JSON structure:"
+          cat files.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run packageJS script
-        run: npm run packageJS
-
-      - name: Run packageJS-green script
-        run: npm run packageJS-green
-
-      - name: List built files
+      - name: Commit and Push
         run: |
-          cd ..
-          ls -la *.7z
-
-      # 👇 新版 Action：创建 Release + 上传文件一步到位
-      - name: Create Release and upload assets
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          files: |
-            ../*.7z
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add files.json
+          
+          # 检查是否有文件变化，如果有则提交并推送，防止无意义的报错
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: 自动化更新资产路径索引 [skip ci]"
+            git push
+          else
+            echo "没有路径发生变化，跳过提交。"
+          fi
