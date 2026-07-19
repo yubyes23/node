@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字资产与爬虫配置索引</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f6f8fa; color: #24292e; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1 { border-bottom: 1px solid #e1e4e8; padding-bottom: 10px; font-size: 24px; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 8px 12px; margin-bottom: 5px; background: #f1f8ff; border-left: 4px solid #0366d6; border-radius: 0 3px 3px 0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 仓库资产路径索引</h1>
+        <ul id="path-list">加载中...</ul>
+    </div>
+
+    <script>
+        // 页面加载时自动读取 GitHub Actions 生成的 json 文件
+        fetch('./files.json')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('path-list');
+                list.innerHTML = ''; // 清空提示
+                
+                if(data.length === 0) {
+                    list.innerHTML = '<li>暂无有效文件路径</li>';
+                    return;
+                }
+
+                data.forEach(path => {
+                    const li = document.createElement('li');
+                    li.textContent = path;
+                    list.appendChild(li);
+                });
+            })
+            .catch(err => {
+                document.getElementById('path-list').innerHTML = '<li style="background:#ffeef0; border-left-color:#cb2431;">未找到 files.json 文件，请等待工作流首次运行生成。</li>';
+            });
+    </script>
+</body>
+</html>
