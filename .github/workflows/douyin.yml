@@ -2,7 +2,7 @@ name: douyin M3U to KV
 
 on:
   schedule:
-    - cron: '44 */2 * * *'
+    - cron: '44 * * * *'
   workflow_dispatch:
 
 jobs:
